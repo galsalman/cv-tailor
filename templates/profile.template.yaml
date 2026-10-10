@@ -1,0 +1,100 @@
+# cv-tailor profile — the single source of truth about you.
+#
+# Every agent reads this file and nothing else about you. The CV builder may only use what is
+# here, and the fact check compares every CV against it. Keep it honest and current.
+#
+# Text fields can be bilingual: {en: "...", he: "..."}. Fill the languages you apply in.
+#
+# Every claim (bullet, skill, project) carries two flags:
+#   status:       verified       you did it, and could show or prove it
+#                 self-reported  true-ish, but you can't back it up well (a course you started,
+#                                a tool you tried once, something someone else mostly built)
+#                 do-not-use     never put this on a CV, whatever the posting asks for
+#   explainable:  true / false   could you explain it in an interview, in your own words,
+#                                if asked two follow-up questions?
+#
+# What the builder does with them:
+#   verified + explainable: true    -> may use
+#   verified + explainable: false   -> asks you first
+#   self-reported                   -> asks you first, never includes silently
+#   do-not-use                      -> never
+#
+# ids: short, unique, lowercase-with-dashes. CV specs and verdicts refer to items by id.
+# Dates: YYYY-MM. Use "present" for an ongoing job.
+
+person:
+  name: {en: "", he: ""}
+  email: ""
+  phone: ""
+  location: {en: "", he: ""}         # city/region, as you'd write it on a CV
+  linkedin: ""                       # optional, full URL
+
+preferences:
+  language: he                       # language the agents answer you in: he / en
+  cv_languages: [he, en]             # languages you build CVs in
+
+situation:                           # what's true right now; used for follow-ups and summaries
+  employment: searching              # employed / searching
+  available_from: ""                 # YYYY-MM, or "immediately"
+  relocating_to: ""                  # optional
+  notes: ""                          # anything else recent and relevant
+
+targets:                             # job tracks, highest priority first
+  - track: ""                        # e.g. "Operations Analyst"
+    lead_with: []                    # experience ids that should lead a CV for this track
+    notes: ""                        # optional: what to emphasize or leave out for this track
+
+experience:                          # reverse chronological
+  - id: exp-
+    employer: {en: "", he: ""}
+    title: {en: "", he: ""}
+    location: {en: "", he: ""}       # optional
+    start: YYYY-MM
+    end: present                     # or YYYY-MM
+    bullets:
+      - id: exp--1
+        text: {en: "", he: ""}
+        status: verified
+        explainable: true
+        evidence: ""                 # optional: how you could show it (a report, a reference)
+
+education:
+  - id: edu-
+    degree: {en: "", he: ""}         # e.g. "B.A. Economics and Management"
+    institution: {en: "", he: ""}
+    status: completed                # completed / in-progress
+    end: YYYY-MM                     # for completed
+    expected: YYYY-MM                # for in-progress: the CV will say "expected <date>"
+    notes: {en: "", he: ""}          # optional: specialization, GPA if you want it shown
+
+skills:
+  - id: skill-
+    name: ""                         # as it should appear on a CV, e.g. "Power BI"
+    level: working                   # basic / working / advanced
+    status: verified
+    explainable: true
+    context: ""                      # where you used it; the builder uses this, not the CV
+
+projects:                            # personal or academic projects
+  - id: proj-
+    name: {en: "", he: ""}
+    status: verified
+    explainable: true
+    bullets:
+      - id: proj--1
+        text: {en: "", he: ""}
+        status: verified
+        explainable: true
+
+languages:
+  - id: lang-
+    name: {en: "", he: ""}
+    level: {en: "", he: ""}          # e.g. Native / Fluent / Good
+
+summaries:                           # optional ready-made summaries per track
+  - track: ""
+    text: {en: "", he: ""}
+    sources: []                      # ids the summary relies on
+
+rules:                               # your own standing rules, in plain words
+  - "Never describe a degree as completed before it is."

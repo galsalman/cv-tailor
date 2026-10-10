@@ -1,0 +1,15 @@
+{
+  "name": "cv-tailor",
+  "description": "cv-tailor: honest CV tailoring for Hebrew and English job postings, as a Claude Code plugin.",
+  "owner": {
+    "name": "Gal Salman",
+    "url": "https://github.com/galsalman"
+  },
+  "plugins": [
+    {
+      "name": "cv-tailor",
+      "source": "./",
+      "description": "Honest, one-page, ATS-safe CV tailoring for Hebrew and English job postings, with a private application tracker."
+    }
+  ]
+}

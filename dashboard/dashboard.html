@@ -1,0 +1,568 @@
+<title>Application Tracker</title>
+<style>
+/* layout: header + clickable status counters, then one table of applications whose rows
+   expand into the verdict, plan and file paths; becomes stacked cards at phone width */
+:root{
+  --bg:#f3f4f7; --surface:#ffffff; --surface-2:#eceef3; --line:#dcdfe7;
+  --ink:#15171c; --ink-2:#555b69; --ink-3:#8a90a0;
+  --accent:#2f56b0; --accent-ink:#ffffff; --accent-soft:#e3e9f7;
+  --good:#1d7a45; --good-soft:#e2f2e8;
+  --warn:#946414; --warn-soft:#f6ecd6;
+  --bad:#a1362a; --bad-soft:#f7e2de;
+  --info:#5b4bb0; --info-soft:#ebe7f8;
+  --f-display:'Rubik', 'Heebo', system-ui, sans-serif;
+  --f-body:'Heebo', 'Segoe UI', system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121419; --surface:#1a1d24; --surface-2:#222631; --line:#2f3442;
+    --ink:#eceef3; --ink-2:#b0b6c4; --ink-3:#7c8395;
+    --accent:#86a5ee; --accent-ink:#0f1730; --accent-soft:#1f2a46;
+    --good:#6fcf97; --good-soft:#18301f;
+    --warn:#e2b25a; --warn-soft:#33280f;
+    --bad:#ee8d7f; --bad-soft:#3a1f1b;
+    --info:#b2a6f2; --info-soft:#2a2545;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121419; --surface:#1a1d24; --surface-2:#222631; --line:#2f3442;
+  --ink:#eceef3; --ink-2:#b0b6c4; --ink-3:#7c8395;
+  --accent:#86a5ee; --accent-ink:#0f1730; --accent-soft:#1f2a46;
+  --good:#6fcf97; --good-soft:#18301f;
+  --warn:#e2b25a; --warn-soft:#33280f;
+  --bad:#ee8d7f; --bad-soft:#3a1f1b;
+  --info:#b2a6f2; --info-soft:#2a2545;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg); color:var(--ink); font-family:var(--f-body); line-height:1.5; font-size:14.5px;}
+.wrap{max-width:1160px; margin:0 auto; padding-inline:20px; padding-block:28px 56px;}
+h1,h2{font-family:var(--f-display); text-wrap:balance; margin:0;}
+a{color:var(--accent)}
+button,select,input,textarea{font:inherit; color:inherit;}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+header.top{display:flex; flex-wrap:wrap; gap:14px 20px; align-items:flex-end; justify-content:space-between; margin-bottom:22px;}
+header.top h1{font-size:27px; font-weight:700; letter-spacing:-.01em;}
+header.top p{margin:4px 0 0; color:var(--ink-2); max-width:62ch;}
+.head-tools{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+.chip{display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:6px 12px; font-size:12.5px; font-weight:600; border:1px solid var(--line); background:var(--surface); color:var(--ink-2);}
+.chip .dot{width:8px; height:8px; border-radius:50%; background:var(--ink-3);}
+.chip.live .dot{background:var(--good);}
+.chip.local .dot{background:var(--warn);}
+.lang-btn{border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:6px 12px; font-size:12.5px; font-weight:700; cursor:pointer; color:var(--ink);}
+.lang-btn:hover{border-color:var(--ink-3);}
+
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(122px,1fr)); gap:10px; margin-bottom:22px;}
+.stat{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; cursor:pointer; text-align:start;}
+.stat:hover{border-color:var(--ink-3);}
+.stat.on{border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent);}
+.stat .num{font-family:var(--f-display); font-size:25px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.2;}
+.stat .lbl{font-size:12.5px; color:var(--ink-2);}
+.stat[data-f="cvready"] .num{color:var(--warn)}
+.stat[data-f="waiting"] .num{color:var(--accent)}
+.stat[data-f="positive"] .num{color:var(--good)}
+.stat[data-f="negative"] .num{color:var(--bad)}
+.stat[data-f="stale"] .num, .stat[data-f="skipped"] .num{color:var(--ink-3)}
+
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px 20px;}
+.panel-head{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-bottom:14px;}
+.panel-head h2{font-size:17px;}
+.panel-head .hint{font-size:12.5px; color:var(--ink-3); font-weight:500;}
+.btn{border:1px solid transparent; border-radius:9px; padding:8px 15px; font-weight:700; cursor:pointer; background:var(--accent); color:var(--accent-ink);}
+.btn.ghost{background:transparent; border-color:var(--line); color:var(--ink);}
+.btn:disabled{opacity:.55; cursor:default;}
+
+#add-form{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:14px; margin-bottom:16px; background:var(--surface-2); border-radius:12px;}
+#add-form .full{grid-column:1 / -1}
+#add-form .half{grid-column:span 2}
+#add-form label{display:block; font-size:12px; color:var(--ink-2); margin-bottom:3px;}
+#add-form input, #add-form select, #add-form textarea{width:100%; padding:7px 10px; border-radius:8px; border:1px solid var(--line); background:var(--surface); font-size:14px;}
+#add-form .actions{display:flex; gap:8px; justify-content:flex-end;}
+.form-error{color:var(--bad); font-size:13px; align-self:center; margin-inline-end:auto;}
+
+.table-wrap{overflow-x:auto;}
+table{width:100%; border-collapse:collapse;}
+thead th{text-align:start; font-size:11.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); padding:0 10px 9px; white-space:nowrap;}
+tr.row{border-top:1px solid var(--line); cursor:pointer;}
+tr.row:hover{background:var(--surface-2);}
+tr.row.stale .company, tr.row.stale .role, tr.row.skipped .company, tr.row.skipped .role{opacity:.6;}
+td{padding:10px; vertical-align:top;}
+.company{font-weight:700;}
+.role{color:var(--ink-2); font-size:13px;}
+.date{font-variant-numeric:tabular-nums; color:var(--ink-2); font-size:13px; white-space:nowrap;}
+.chev{display:inline-block; color:var(--ink-3); font-size:11px; transition:transform .15s;}
+[dir="rtl"] .chev{transform:scaleX(-1);}
+tr.row.open .chev{transform:rotate(90deg);}
+@media (prefers-reduced-motion: reduce){ .chev{transition:none;} }
+
+.meter{display:flex; flex-direction:column; gap:3px; min-width:58px;}
+.meter b{font-size:13px; font-variant-numeric:tabular-nums;}
+.meter .bar{height:5px; border-radius:3px; background:var(--surface-2); overflow:hidden; width:58px;}
+.meter .fill{height:100%; border-radius:3px;}
+.meter.none b{color:var(--ink-3); font-weight:500;}
+
+.stack{display:flex; flex-direction:column; gap:5px; align-items:flex-start;}
+.pill{appearance:none; border:1px solid transparent; border-radius:999px; padding:4px 12px; font-size:12.5px; font-weight:700; cursor:pointer;}
+span.pill{cursor:default; display:inline-block;}
+.pill.small{font-size:11.5px; padding:3px 10px;}
+.pill[data-v="not_submitted"]{background:var(--surface-2); color:var(--ink-2); border-color:var(--line);}
+.pill[data-v="cv_ready"]{background:var(--warn-soft); color:var(--warn);}
+.pill[data-v="submitted"]{background:var(--accent-soft); color:var(--accent);}
+.pill[data-v="skipped"]{background:var(--surface-2); color:var(--ink-3); border-color:var(--line);}
+.pill[data-v="waiting"]{background:var(--surface-2); color:var(--ink-2); border-color:var(--line);}
+.pill[data-v="positive"]{background:var(--good-soft); color:var(--good);}
+.pill[data-v="negative"]{background:var(--bad-soft); color:var(--bad);}
+.pill.stage{background:var(--info-soft); color:var(--info);}
+.note{font-size:11.5px; color:var(--ink-3);}
+.note.due{color:var(--warn); font-weight:700;}
+.stage-line{display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:11.5px; color:var(--ink-3);}
+.stage-line input[type=date]{font-size:11.5px; padding:2px 6px; border-radius:6px; border:1px solid var(--line); background:var(--surface);}
+
+tr.detail td{background:var(--surface-2); padding:14px 16px;}
+.detail-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 20px;}
+.detail-grid .full{grid-column:1 / -1}
+.dl{font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); margin-bottom:3px;}
+.dv{font-size:13.5px; color:var(--ink-2); white-space:pre-wrap; overflow-wrap:anywhere;}
+.path{font-family:ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size:12.5px; direction:ltr; unicode-bidi:isolate; display:inline-block;}
+.del{border:none; background:transparent; color:var(--ink-3); cursor:pointer; padding:4px 7px; border-radius:6px; font-size:15px; line-height:1;}
+.del:hover{background:var(--bad-soft); color:var(--bad);}
+.confirm{display:flex; gap:6px; align-items:center; font-size:12.5px; white-space:nowrap;}
+.confirm button{border:1px solid var(--line); background:var(--surface); border-radius:7px; padding:3px 9px; cursor:pointer; font-weight:700;}
+.confirm .yes{background:var(--bad); color:#fff; border-color:var(--bad);}
+
+.filters{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;}
+.filters button{border:1px solid var(--line); background:var(--bg); color:var(--ink-2); border-radius:999px; padding:5px 12px; font-size:13px; font-weight:600; cursor:pointer;}
+.filters button span{color:var(--ink-3); font-variant-numeric:tabular-nums; margin-inline-start:3px;}
+.filters button.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+.filters button.on span{color:var(--accent-ink);}
+
+.empty{padding:38px 12px; text-align:center; color:var(--ink-2);}
+.empty strong{display:block; font-family:var(--f-display); font-size:17px; color:var(--ink); margin-bottom:4px;}
+.cmd{font-family:ui-monospace, Consolas, monospace; font-size:.92em; direction:ltr;}
+.empty code{font-family:ui-monospace, Consolas, monospace; background:var(--surface-2); padding:2px 6px; border-radius:5px; direction:ltr; unicode-bidi:isolate;}
+.banner{margin-bottom:14px; padding:10px 14px; border-radius:10px; font-size:13.5px; background:var(--warn-soft); color:var(--warn);}
+
+footer{margin-top:26px; font-size:12.5px; color:var(--ink-3); text-align:center;}
+footer ul{list-style:none; padding:0; margin:8px auto 0; display:grid; gap:4px; max-width:70ch;}
+
+@media (max-width:760px){
+  .wrap{padding-inline:16px; padding-block:18px 40px;}
+  header.top h1{font-size:22px;}
+  .stats{display:flex; overflow-x:auto; padding-bottom:4px;}
+  .stat{flex:0 0 auto; min-width:108px;}
+  .filters{flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px;}
+  .filters button{flex:0 0 auto;}
+  .panel{padding:14px 12px;}
+  #add-form{grid-template-columns:1fr;}
+  #add-form .half{grid-column:auto;}
+  thead{display:none;}
+  table, tbody{display:block;}
+  tr.row{display:grid; grid-template-columns:1fr auto; gap:8px 12px; padding:12px; margin-top:10px; border:1px solid var(--line); border-radius:12px; background:var(--surface);}
+  tr.row td{display:block; padding:0;}
+  tr.row td.c-chev{display:none;}
+  tr.row td.c-main{grid-column:1; grid-row:1;}
+  tr.row td.c-del{grid-column:2; grid-row:1; justify-self:end;}
+  tr.row td.c-loc{grid-column:1 / -1;}
+  tr.row td.c-status{grid-column:1 / -1;}
+  tr.row td.c-m1, tr.row td.c-m2{display:inline-block;}
+  tr.row td.c-date{grid-column:1 / -1;}
+  tr.row td[data-label]::before{content:attr(data-label); display:block; font-size:10.5px; color:var(--ink-3); margin-bottom:2px;}
+  tr.row td.c-main::before, tr.row td.c-status::before{display:none;}
+  tr.detail{display:block;}
+  tr.detail td{display:block; border-radius:0 0 12px 12px;}
+  .detail-grid{grid-template-columns:1fr;}
+}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Rubik:wght@600;700&display=swap">
+
+<div class="wrap" id="app">
+  <header class="top">
+    <div>
+      <h1 id="t-title">Application Tracker</h1>
+      <p id="t-sub"></p>
+    </div>
+    <div class="head-tools">
+      <span class="chip" id="mode-chip"><span class="dot"></span><span id="mode-text">…</span></span>
+      <button type="button" class="lang-btn" id="lang-btn">עברית</button>
+    </div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span id="t-jobs">Applications</span> <span class="hint" id="count-hint"></span></h2>
+      <button type="button" class="btn ghost" id="add-toggle" hidden>+ Add</button>
+    </div>
+    <div class="banner" id="banner" hidden></div>
+
+    <form id="add-form" hidden>
+      <div class="half"><label for="f-company" data-t="company"></label><input id="f-company" name="company" required></div>
+      <div class="half"><label for="f-role" data-t="role"></label><input id="f-role" name="role" required></div>
+      <div class="half"><label for="f-location" data-t="location"></label><input id="f-location" name="location"></div>
+      <div><label for="f-date" data-t="dateFound"></label><input id="f-date" name="dateFound" type="date"></div>
+      <div><label for="f-status" data-t="submission"></label><select id="f-status" name="submissionStatus"></select></div>
+      <div class="full"><label for="f-link" data-t="link"></label><input id="f-link" name="link" type="url" placeholder="https://"></div>
+      <div class="full"><label for="f-notes" data-t="notes"></label><textarea id="f-notes" name="notes" rows="2"></textarea></div>
+      <div class="full actions">
+        <span class="form-error" id="form-error" hidden></span>
+        <button type="button" class="btn ghost" id="add-cancel" data-t="cancel"></button>
+        <button type="submit" class="btn" id="add-save" data-t="save"></button>
+      </div>
+    </form>
+
+    <div class="filters" id="filters" role="toolbar"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty" hidden></div>
+  </section>
+
+  <footer>
+    <div id="t-rules-title"></div>
+    <ul id="t-rules"></ul>
+  </footer>
+</div>
+
+<!--CV_TAILOR_LOCAL_DATA-->
+<script>
+(function () {
+  'use strict';
+  var STALE_DAYS = 10;
+  var SUBMISSION = ['not_submitted', 'cv_ready', 'submitted', 'skipped'];
+  var RESPONSE = ['waiting', 'positive', 'negative'];
+  var STAGES = ['none', 'phone', 'video', 'interview', 'offer'];
+
+  var I18N = {
+    en: {
+      dir: 'ltr', other: 'עברית', title: 'Application Tracker',
+      sub: 'Every job you checked, built a CV for, or applied to. Filled in by `/tailor-cv` and `/track`.',
+      live: 'Live', local: 'Local copy · read-only', connecting: 'Connecting…', offline: 'Data store unavailable',
+      jobs: 'Applications', add: '+ Add job', company: 'Company', role: 'Role', location: 'Location',
+      dateFound: 'Date found', submission: 'Status', link: 'Posting link', notes: 'Notes',
+      cancel: 'Cancel', save: 'Save', saving: 'Saving…', required: 'Company and role are required.',
+      saveFailed: 'Could not save. Check your connection and try again.',
+      head: ['', 'Company / role', 'Location', 'Status', 'Fit', 'ATS', 'Found', ''],
+      sub_not_submitted: 'Not submitted', sub_cv_ready: 'CV ready', sub_submitted: 'Submitted', sub_skipped: 'Skipped',
+      res_waiting: 'Waiting for reply', res_positive: 'Positive reply', res_negative: 'Rejected',
+      st_none: 'No stage yet', st_phone: 'Phone call', st_video: 'Recorded video', st_interview: 'Interview', st_offer: 'Offer',
+      f_all: 'All', f_notsub: 'Not submitted', f_cvready: 'CV ready', f_waiting: 'Waiting', f_positive: 'In process',
+      f_negative: 'Rejected', f_stale: 'No reply (10+ days)', f_skipped: 'Skipped',
+      notRated: 'not rated', waitedDays: function (d) { return 'Waiting ' + d + ' days'; },
+      staleNote: function (d) { return 'No reply for ' + d + ' days'; },
+      soonStale: function (left) { return left + ' days until it counts as no reply'; },
+      stageOn: 'On', done: 'Done', daysLeft: function (n) { return n > 0 ? 'in ' + n + ' days' : (n === 0 ? 'today' : 'date passed'); },
+      afterStage: function (d) { return 'Waiting for the next step · ' + d + ' days'; },
+      verdict: 'Fit verdict', plan: 'CV plan', cvFile: 'CV file', folder: 'Job folder', posting: 'Posting',
+      open: 'Open posting ↗', submittedOn: 'Submitted', del: 'Delete', delQ: 'Delete this job?', yes: 'Delete', no: 'Keep',
+      of: ' of ', emptyTitle: 'No applications yet',
+      emptyBody: 'Run <code>/tailor-cv &lt;posting link&gt;</code> in Claude Code, or add a job here.',
+      emptyLocal: 'Run <code>/tailor-cv &lt;posting link&gt;</code> in Claude Code and this list fills in.',
+      emptyFilter: 'Nothing matches this filter.',
+      localBanner: 'This is a local copy. Change statuses with `/track` in Claude Code; the file updates itself.',
+      rulesTitle: 'How rows move',
+      rules: ['`/tailor-cv` adds the row with the fit verdict, and marks it "CV ready" once the CV passes the ATS check.',
+              'A submitted job with no reply after 10 days moves to "No reply". Setting any reply brings it back.',
+              'A "not now" verdict is logged as Skipped, so the same posting is not checked twice.']
+    },
+    he: {
+      dir: 'rtl', other: 'English', title: 'לוח הגשות',
+      sub: 'כל משרה שנבדקה, שנבנו לה קו״ח או שהוגשה. הפקודות `/tailor-cv` ו-`/track` ממלאות את הרשימה.',
+      live: 'חי', local: 'עותק מקומי · לקריאה בלבד', connecting: 'מתחבר…', offline: 'מאגר הנתונים לא זמין',
+      jobs: 'משרות במעקב', add: '+ הוספת משרה', company: 'חברה', role: 'תפקיד', location: 'מיקום',
+      dateFound: 'תאריך איתור', submission: 'סטטוס', link: 'קישור למשרה', notes: 'הערות',
+      cancel: 'ביטול', save: 'שמירה', saving: 'שומר…', required: 'חובה למלא חברה ותפקיד.',
+      saveFailed: 'השמירה נכשלה. בדקו את החיבור ונסו שוב.',
+      head: ['', 'חברה / תפקיד', 'מיקום', 'סטטוס', 'התאמה', 'ATS', 'אותרה', ''],
+      sub_not_submitted: 'לא הוגש', sub_cv_ready: 'קו״ח מוכן', sub_submitted: 'הוגש', sub_skipped: 'דולג',
+      res_waiting: 'ממתין לתשובה', res_positive: 'תשובה חיובית', res_negative: 'נדחה',
+      st_none: 'טרם נקבע שלב', st_phone: 'שיחת טלפון', st_video: 'ראיון וידאו מוקלט', st_interview: 'ראיון', st_offer: 'הצעה',
+      f_all: 'הכל', f_notsub: 'לא הוגש', f_cvready: 'קו״ח מוכן', f_waiting: 'ממתין', f_positive: 'בתהליך',
+      f_negative: 'נדחה', f_stale: 'ללא מענה (10+ ימים)', f_skipped: 'דולג',
+      notRated: 'לא הוערך', waitedDays: function (d) { return 'ממתין ' + d + ' ימים'; },
+      staleNote: function (d) { return 'ללא מענה ' + d + ' ימים'; },
+      soonStale: function (left) { return 'עוד ' + left + ' ימים ייחשב ללא מענה'; },
+      stageOn: 'מועד', done: 'בוצע', daysLeft: function (n) { return n > 0 ? 'עוד ' + n + ' ימים' : (n === 0 ? 'היום' : 'המועד עבר'); },
+      afterStage: function (d) { return 'ממתין לשלב הבא · ' + d + ' ימים'; },
+      verdict: 'פסק דין כדאיות', plan: 'תוכנית קו״ח', cvFile: 'קובץ קו״ח', folder: 'תיקיית משרה', posting: 'מודעה',
+      open: 'למודעה ↗', submittedOn: 'הוגש', del: 'מחיקה', delQ: 'למחוק את המשרה?', yes: 'מחיקה', no: 'השארה',
+      of: ' מתוך ', emptyTitle: 'עדיין אין משרות במעקב',
+      emptyBody: 'הריצו <code>/tailor-cv &lt;קישור למשרה&gt;</code> ב-Claude Code, או הוסיפו משרה כאן.',
+      emptyLocal: 'הריצו <code>/tailor-cv &lt;קישור למשרה&gt;</code> ב-Claude Code והרשימה תתמלא.',
+      emptyFilter: 'אין משרות בסינון הזה.',
+      localBanner: 'זה עותק מקומי. עדכון סטטוס נעשה עם `/track` ב-Claude Code, והקובץ מתעדכן לבד.',
+      rulesTitle: 'איך שורות זזות',
+      rules: ['`/tailor-cv` מוסיף שורה עם פסק הדין, ומסמן "קו״ח מוכן" אחרי שהקו״ח עבר את בדיקת ה-ATS.',
+              'משרה שהוגשה ולא התקבל עליה מענה תוך 10 ימים עוברת ל"ללא מענה". כל תשובה מחזירה אותה לתהליך.',
+              'פסק דין "לא כרגע" נרשם כ"דולג", כדי שאותה מודעה לא תיבדק פעמיים.']
+    }
+  };
+
+  var FILTERS = ['all', 'notsub', 'cvready', 'waiting', 'positive', 'negative', 'stale', 'skipped'];
+  var state = {
+    lang: 'he', mode: 'connecting', rows: [], filter: 'all', open: {}, confirmDel: null,
+    db: null, settingsLang: null
+  };
+  try { var savedF = localStorage.getItem('cvt-filter'); if (FILTERS.indexOf(savedF) >= 0) state.filter = savedF; } catch (e) {}
+  var langOverride = null;
+  try { langOverride = localStorage.getItem('cvt-lang'); } catch (e) {}
+
+  var $ = function (id) { return document.getElementById(id); };
+  function L() { return I18N[state.lang]; }
+  function rich(s) { return esc(s).replace(/`([^`]+)`/g, '<bdi class="cmd">$1</bdi>'); }
+  function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+  function todayISO() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function dayDiff(fromISO, toISO) {
+    var a = new Date(fromISO + 'T00:00:00').getTime(), b = new Date((toISO || todayISO()) + 'T00:00:00').getTime();
+    return (isNaN(a) || isNaN(b)) ? null : Math.round((b - a) / 86400000);
+  }
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso + 'T00:00:00');
+    if (isNaN(d)) return esc(iso);
+    return d.toLocaleDateString(state.lang === 'he' ? 'he-IL' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+  function sub(r) { return SUBMISSION.indexOf(r.submissionStatus) >= 0 ? r.submissionStatus : 'not_submitted'; }
+  function res(r) { return RESPONSE.indexOf(r.responseStatus) >= 0 ? r.responseStatus : 'waiting'; }
+  function isStale(r) {
+    if (sub(r) !== 'submitted' || res(r) !== 'waiting' || !r.dateSubmitted) return false;
+    var d = dayDiff(r.dateSubmitted); return d != null && d >= STALE_DAYS;
+  }
+  function category(r) {
+    var s = sub(r);
+    if (s === 'not_submitted') return 'notsub';
+    if (s === 'cv_ready') return 'cvready';
+    if (s === 'skipped') return 'skipped';
+    if (res(r) === 'positive') return 'positive';
+    if (res(r) === 'negative') return 'negative';
+    return isStale(r) ? 'stale' : 'waiting';
+  }
+  function meter(pct) {
+    if (pct == null || pct === '') return '<div class="meter none"><b>' + esc(L().notRated) + '</b></div>';
+    var n = Math.max(0, Math.min(100, Number(pct) || 0));
+    var c = n >= 70 ? 'var(--good)' : (n >= 40 ? 'var(--warn)' : 'var(--bad)');
+    return '<div class="meter"><b style="color:' + c + '">' + n + '%</b><div class="bar"><div class="fill" style="width:' + n + '%;background:' + c + '"></div></div></div>';
+  }
+  function options(list, prefix, current) {
+    return list.map(function (v) {
+      return '<option value="' + v + '"' + (v === current ? ' selected' : '') + '>' + esc(L()[prefix + v]) + '</option>';
+    }).join('');
+  }
+  var editable = function () { return state.mode === 'live'; };
+
+  function statusCell(r) {
+    var t = L(), s = sub(r), html = '';
+    html += editable()
+      ? '<select class="pill" data-act="sub" data-v="' + s + '" aria-label="' + esc(t.submission) + '">' + options(SUBMISSION, 'sub_', s) + '</select>'
+      : '<span class="pill" data-v="' + s + '">' + esc(t['sub_' + s]) + '</span>';
+    if (s === 'submitted') {
+      var rs = res(r);
+      html += editable()
+        ? '<select class="pill small" data-act="res" data-v="' + rs + '">' + options(RESPONSE, 'res_', rs) + '</select>'
+        : '<span class="pill small" data-v="' + rs + '">' + esc(t['res_' + rs]) + '</span>';
+      if (rs === 'waiting' && r.dateSubmitted) {
+        var w = dayDiff(r.dateSubmitted);
+        if (w != null && w >= STALE_DAYS) html += '<span class="note">' + esc(t.staleNote(w)) + '</span>';
+        else if (w != null && w >= 0) html += '<span class="note' + (STALE_DAYS - w <= 3 ? ' due' : '') + '">' + esc(t.waitedDays(w)) +
+          (STALE_DAYS - w <= 3 ? ' · ' + esc(t.soonStale(STALE_DAYS - w)) : '') + '</span>';
+      }
+      if (rs === 'positive') {
+        var st = STAGES.indexOf(r.interviewStage) >= 0 ? r.interviewStage : 'none';
+        html += editable()
+          ? '<select class="pill small stage" data-act="stage">' + options(STAGES, 'st_', st) + '</select>'
+          : '<span class="pill small stage">' + esc(t['st_' + st]) + '</span>';
+        if (st !== 'none' && st !== 'offer') {
+          if (r.stageDone) {
+            var after = r.stageDoneDate ? dayDiff(r.stageDoneDate) : null;
+            html += '<span class="note' + (after >= STALE_DAYS ? ' due' : '') + '">' + esc(t.afterStage(after == null ? 0 : after)) + '</span>';
+          } else if (editable()) {
+            html += '<label class="stage-line">' + esc(t.stageOn) + ' <input type="date" data-act="stageDate" value="' + esc(r.stageDate || '') + '"></label>';
+          } else if (r.stageDate) {
+            html += '<span class="note">' + esc(t.stageOn) + ' ' + fmtDate(r.stageDate) + '</span>';
+          }
+          if (r.stageDate && !r.stageDone) {
+            var left = dayDiff(todayISO(), r.stageDate);
+            html += '<span class="note' + (left <= 1 ? ' due' : '') + '">' + esc(t.daysLeft(left)) + '</span>';
+          }
+          if (editable()) html += '<label class="stage-line"><input type="checkbox" data-act="stageDone"' + (r.stageDone ? ' checked' : '') + '> ' + esc(t.done) + '</label>';
+        }
+      }
+    }
+    return '<div class="stack">' + html + '</div>';
+  }
+
+  function render() {
+    var t = L();
+    document.documentElement.lang = state.lang;
+    $('app').setAttribute('dir', t.dir);
+    document.title = t.title;
+    $('t-title').textContent = t.title;
+    $('t-sub').innerHTML = rich(t.sub);
+    $('t-jobs').textContent = t.jobs;
+    $('lang-btn').textContent = t.other;
+    var chip = $('mode-chip');
+    chip.className = 'chip ' + (state.mode === 'live' ? 'live' : (state.mode === 'local' ? 'local' : ''));
+    $('mode-text').textContent = state.mode === 'live' ? t.live : state.mode === 'local' ? t.local : state.mode === 'offline' ? t.offline : t.connecting;
+    $('add-toggle').hidden = !editable();
+    $('add-toggle').textContent = t.add;
+    document.querySelectorAll('[data-t]').forEach(function (el) { el.textContent = t[el.getAttribute('data-t')]; });
+    $('f-status').innerHTML = options(['not_submitted', 'cv_ready', 'submitted'], 'sub_', $('f-status').value || 'not_submitted');
+    $('banner').hidden = state.mode !== 'local';
+    $('banner').innerHTML = rich(t.localBanner);
+    $('thead').innerHTML = t.head.map(function (h) { return '<th>' + esc(h) + '</th>'; }).join('');
+    $('t-rules-title').textContent = t.rulesTitle;
+    $('t-rules').innerHTML = t.rules.map(function (r) { return '<li>' + rich(r) + '</li>'; }).join('');
+
+    var rows = state.rows.slice().sort(function (a, b) { return String(b.dateFound || '').localeCompare(String(a.dateFound || '')); });
+    var counts = { all: rows.length };
+    rows.forEach(function (r) { var c = category(r); counts[c] = (counts[c] || 0) + 1; });
+
+    $('stats').innerHTML = FILTERS.filter(function (f) { return f !== 'notsub'; }).map(function (f) {
+      return '<button type="button" class="stat' + (f === state.filter ? ' on' : '') + '" data-f="' + f + '"><div class="num">' + (counts[f] || 0) + '</div><div class="lbl">' + esc(t['f_' + f]) + '</div></button>';
+    }).join('');
+    $('filters').innerHTML = FILTERS.map(function (f) {
+      return '<button type="button" data-f="' + f + '" class="' + (f === state.filter ? 'on' : '') + '">' + esc(t['f_' + f]) + '<span>' + (counts[f] || 0) + '</span></button>';
+    }).join('');
+
+    var shown = state.filter === 'all' ? rows : rows.filter(function (r) { return category(r) === state.filter; });
+    $('count-hint').textContent = rows.length ? '(' + (shown.length === rows.length ? shown.length : shown.length + t.of + rows.length) + ')' : '';
+
+    var empty = $('empty');
+    empty.hidden = shown.length !== 0 || state.mode === 'connecting';
+    empty.innerHTML = rows.length ? esc(t.emptyFilter)
+      : '<strong>' + esc(t.emptyTitle) + '</strong>' + (state.mode === 'local' ? t.emptyLocal : t.emptyBody);
+
+    $('rows').innerHTML = shown.map(function (r) {
+      var id = esc(r.id), c = category(r), isOpen = !!state.open[r.id];
+      var delCell = !editable() ? '' : (state.confirmDel === r.id
+        ? '<div class="confirm"><span>' + esc(t.delQ) + '</span><button type="button" class="yes" data-act="delYes">' + esc(t.yes) + '</button><button type="button" data-act="delNo">' + esc(t.no) + '</button></div>'
+        : '<button type="button" class="del" data-act="del" title="' + esc(t.del) + '" aria-label="' + esc(t.del) + '">✕</button>');
+      var main =
+        '<tr class="row' + (isOpen ? ' open' : '') + (c === 'stale' ? ' stale' : '') + (c === 'skipped' ? ' skipped' : '') + '" data-id="' + id + '">' +
+          '<td class="c-chev"><span class="chev">▸</span></td>' +
+          '<td class="c-main"><div class="company">' + esc(r.company || '—') + '</div><div class="role">' + esc(r.role || '') + '</div></td>' +
+          '<td class="c-loc" data-label="' + esc(t.head[2]) + '">' + esc(r.location || '—') + '</td>' +
+          '<td class="c-status">' + statusCell(r) + '</td>' +
+          '<td class="c-m1" data-label="' + esc(t.head[4]) + '">' + meter(r.skillsMatchPercent) + '</td>' +
+          '<td class="c-m2" data-label="' + esc(t.head[5]) + '">' + meter(r.cvMatchPercent) + '</td>' +
+          '<td class="c-date date" data-label="' + esc(t.head[6]) + '">' + fmtDate(r.dateFound) + '</td>' +
+          '<td class="c-del">' + delCell + '</td>' +
+        '</tr>';
+      if (!isOpen) return main;
+      var fields = [];
+      if (r.link) fields.push('<div><div class="dl">' + esc(t.posting) + '</div><div class="dv"><a href="' + esc(r.link) + '" target="_blank" rel="noopener">' + esc(t.open) + '</a></div></div>');
+      if (r.dateSubmitted) fields.push('<div><div class="dl">' + esc(t.submittedOn) + '</div><div class="dv date">' + fmtDate(r.dateSubmitted) + '</div></div>');
+      if (r.cvFile) fields.push('<div><div class="dl">' + esc(t.cvFile) + '</div><div class="dv"><span class="path">' + esc(r.cvFile) + '</span></div></div>');
+      if (r.jobFolder) fields.push('<div><div class="dl">' + esc(t.folder) + '</div><div class="dv"><span class="path">' + esc(r.jobFolder) + '</span></div></div>');
+      if (r.verdict) fields.push('<div class="full"><div class="dl">' + esc(t.verdict) + '</div><div class="dv">' + esc(r.verdict) + '</div></div>');
+      if (r.plan) fields.push('<div class="full"><div class="dl">' + esc(t.plan) + '</div><div class="dv">' + esc(r.plan) + '</div></div>');
+      if (r.notes) fields.push('<div class="full"><div class="dl">' + esc(t.notes) + '</div><div class="dv">' + esc(r.notes) + '</div></div>');
+      return main + '<tr class="detail"><td colspan="8"><div class="detail-grid">' + (fields.join('') || '<div class="dv">—</div>') + '</div></td></tr>';
+    }).join('');
+  }
+
+  // ---- writes (live mode only) --------------------------------------------------------
+  var writing = {};
+  function write(id, patch) {
+    if (!editable() || writing[id]) return;
+    writing[id] = true;
+    state.db.collection('applications').doc(id).update(patch)
+      .catch(function (err) { console.error('update failed', err); })
+      .then(function () { writing[id] = false; });
+  }
+  function rowById(id) { return state.rows.filter(function (r) { return r.id === id; })[0]; }
+
+  $('rows').addEventListener('change', function (e) {
+    var tr = e.target.closest('tr.row'); if (!tr) return;
+    var id = tr.getAttribute('data-id'), act = e.target.getAttribute('data-act'), v = e.target.value;
+    if (act === 'sub') {
+      var patch = { submissionStatus: v };
+      var r = rowById(id);
+      if (v === 'submitted' && r && !r.dateSubmitted) { patch.dateSubmitted = todayISO(); patch.responseStatus = 'waiting'; }
+      write(id, patch);
+    } else if (act === 'res') write(id, { responseStatus: v });
+    else if (act === 'stage') write(id, { interviewStage: v, stageDone: false, stageDate: '' });
+    else if (act === 'stageDate') write(id, { stageDate: v });
+    else if (act === 'stageDone') write(id, { stageDone: e.target.checked, stageDoneDate: e.target.checked ? todayISO() : '' });
+  });
+  $('rows').addEventListener('click', function (e) {
+    var tr = e.target.closest('tr.row'); if (!tr) return;
+    var id = tr.getAttribute('data-id'), act = e.target.getAttribute('data-act');
+    if (act === 'del') { state.confirmDel = id; render(); return; }
+    if (act === 'delNo') { state.confirmDel = null; render(); return; }
+    if (act === 'delYes') {
+      state.confirmDel = null;
+      state.db.collection('applications').doc(id).delete().catch(function (err) { console.error('delete failed', err); });
+      return;
+    }
+    if (e.target.closest('select, input, label, a, button')) return;
+    state.open[id] = !state.open[id];
+    render();
+  });
+  function setFilter(f) { state.filter = f; try { localStorage.setItem('cvt-filter', f); } catch (e) {} render(); }
+  $('filters').addEventListener('click', function (e) { var b = e.target.closest('button[data-f]'); if (b) setFilter(b.getAttribute('data-f')); });
+  $('stats').addEventListener('click', function (e) { var b = e.target.closest('button[data-f]'); if (b) setFilter(b.getAttribute('data-f')); });
+  $('lang-btn').addEventListener('click', function () {
+    state.lang = state.lang === 'he' ? 'en' : 'he';
+    try { localStorage.setItem('cvt-lang', state.lang); } catch (e) {}
+    render();
+  });
+
+  var form = $('add-form');
+  $('add-toggle').addEventListener('click', function () { form.hidden = !form.hidden; if (!form.hidden) { $('f-date').value = $('f-date').value || todayISO(); $('f-company').focus(); } });
+  $('add-cancel').addEventListener('click', function () { form.hidden = true; form.reset(); $('form-error').hidden = true; });
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var t = L(), err = $('form-error');
+    var data = {};
+    ['company', 'role', 'location', 'dateFound', 'submissionStatus', 'link', 'notes'].forEach(function (k) { data[k] = (form.elements[k].value || '').trim(); });
+    if (!data.company || !data.role) { err.textContent = t.required; err.hidden = false; return; }
+    data.dateFound = data.dateFound || todayISO();
+    data.responseStatus = 'waiting';
+    if (data.submissionStatus === 'submitted') data.dateSubmitted = todayISO();
+    var save = $('add-save'); save.disabled = true; save.textContent = t.saving;
+    state.db.collection('applications').add(data).then(function () {
+      form.reset(); form.hidden = true; err.hidden = true;
+    }).catch(function (ex) {
+      console.error('add failed', ex); err.textContent = t.saveFailed; err.hidden = false;
+    }).then(function () { save.disabled = false; save.textContent = t.save; });
+  });
+
+  // ---- data sources ---------------------------------------------------------------------
+  function pickLang(fromData) {
+    var l = langOverride || fromData;
+    if (l === 'he' || l === 'en') state.lang = l;
+  }
+  var local = window.CV_TAILOR_DATA;
+  if (local && Array.isArray(local.rows)) {
+    state.mode = 'local';
+    pickLang(local.language);
+    state.rows = local.rows.map(function (r, i) { var c = Object.assign({}, r); c.id = c.id || 'row-' + i; return c; });
+    render();
+    return;
+  }
+  pickLang(null);
+  render();
+  if (!window.claude || typeof window.claude.use !== 'function') { state.mode = 'offline'; render(); return; }
+  window.claude.use('db').then(function (db) {
+    if (!db) { state.mode = 'offline'; render(); return; }
+    state.db = db;
+    state.mode = 'live';
+    render();
+    db.doc('settings/main').onSnapshot(function (snap) {
+      var d = snap.exists ? snap.data() : null;
+      if (d && !langOverride) { pickLang(d.language); render(); }
+    }, function (err) { console.error('settings subscribe error', err); });
+    db.collection('applications').onSnapshot(function (qs) {
+      state.rows = qs.docs.map(function (s) { var c = Object.assign({}, s.data() || {}); c.id = s.id; return c; });
+      render();
+    }, function (err) { console.error('applications subscribe error', err); state.mode = 'offline'; render(); });
+  });
+})();
+</script>

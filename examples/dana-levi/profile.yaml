@@ -1,0 +1,161 @@
+# Example profile of a FICTIONAL person. Dana Levi, her employers, phone and email are made up.
+#
+# It is built to exercise the safety checks, not to look perfect:
+#   - skill-tableau and proj-forecast are self-reported / not explainable -> builder must ask
+#   - skill-python and contoso-4 are do-not-use -> must never reach a CV
+#   - exp-northwind runs 2024-12 to present -> a "2+ years" claim must be blocked
+#   - edu-ba is in-progress -> must be phrased "expected June 2027"
+#   - northwind-1 (he) has a comma right after a Latin term before Hebrew ("Power Query, שהחליף"),
+#     a pattern Word's bidi engine misplaces -> the builder should reword it in a Hebrew CV
+
+person:
+  name: {en: "Dana Levi", he: "דנה לוי"}
+  email: "dana.levi@example.com"
+  phone: "050-0000000"
+  location: {en: "Tel Aviv", he: "תל אביב"}
+  linkedin: ""
+
+preferences:
+  language: he
+  cv_languages: [he, en]
+
+situation:
+  employment: employed
+  available_from: "2026-11"
+  relocating_to: ""
+  notes: "Looking for an analyst role with more data work than the current one."
+
+targets:
+  - track: "Operations Analyst"
+    lead_with: [exp-northwind]
+    notes: "Lead with the reporting automation and the on-time delivery KPI."
+  - track: "Customer Success / Support Operations"
+    lead_with: [exp-contoso]
+    notes: "Lead with team leadership and the Zendesk work."
+
+experience:
+  - id: exp-northwind
+    employer: {en: "Northwind Logistics", he: "נורת'ווינד לוגיסטיקה"}
+    title: {en: "Operations Analyst", he: "אנליסטית תפעול"}
+    location: {en: "Petah Tikva", he: "פתח תקווה"}
+    start: 2024-12
+    end: present
+    bullets:
+      - id: northwind-1
+        text:
+          en: "Built a weekly delivery-performance report in Excel (Power Query) that replaced a manual process of about 4 hours a week"
+          he: "בניתי דוח שבועי לביצועי משלוחים באקסל עם Power Query, שהחליף תהליך ידני של כ-4 שעות בשבוע"
+        status: verified
+        explainable: true
+        evidence: "The report itself; manager can confirm the time saved"
+      - id: northwind-2
+        text:
+          en: "Tracked on-time delivery across 3 regional warehouses and flagged recurring delays to the operations manager"
+          he: "ניטרתי עמידה בזמני אספקה ב-3 מחסנים אזוריים והצפתי עיכובים חוזרים למנהל התפעול"
+        status: verified
+        explainable: true
+      - id: northwind-3
+        text:
+          en: "Wrote SQL queries against the warehouse database to answer ad-hoc questions from team leads"
+          he: "כתבתי שאילתות SQL למסד הנתונים של המחסנים כדי לענות על שאלות של ראשי צוותים"
+        status: verified
+        explainable: true
+      - id: northwind-4
+        text:
+          en: "Helped evaluate a new route-planning system by testing it against historical routes"
+          he: "השתתפתי בבחינת מערכת חדשה לתכנון מסלולים באמצעות בדיקה מול מסלולים היסטוריים"
+        status: verified
+        explainable: false       # she ran the tests but can't explain how the system decides
+
+  - id: exp-contoso
+    employer: {en: "Contoso Telecom", he: "קונטוסו תקשורת"}
+    title: {en: "Customer Service Team Lead", he: "ראש צוות שירות לקוחות"}
+    location: {en: "Ramat Gan", he: "רמת גן"}
+    start: 2021-06
+    end: 2024-11
+    bullets:
+      - id: contoso-1
+        text:
+          en: "Led a team of 8 support representatives handling about 300 tickets a day"
+          he: "הובלתי צוות של 8 נציגי שירות שטיפל בכ-300 פניות ביום"
+        status: verified
+        explainable: true
+      - id: contoso-2
+        text:
+          en: "Built Zendesk macros and views that cut average first-response time from 6 to 4 hours"
+          he: "בניתי מאקרו ותצוגות ב-Zendesk שקיצרו את זמן המענה הראשון הממוצע מ-6 ל-4 שעות"
+        status: verified
+        explainable: true
+      - id: contoso-3
+        text:
+          en: "Trained new representatives on the CRM and on escalation procedures"
+          he: "הכשרתי נציגים חדשים על מערכת ה-CRM ועל נהלי הסלמה"
+        status: verified
+        explainable: true
+      - id: contoso-4
+        text:
+          en: "Led the company-wide CRM migration"
+          he: "הובלתי את הסבת מערכת ה-CRM בכל החברה"
+        status: do-not-use       # she was one of several team leads who tested it; she didn't lead it
+        explainable: false
+
+education:
+  - id: edu-ba
+    degree: {en: "B.A. Economics and Management", he: "תואר ראשון בכלכלה וניהול"}
+    institution: {en: "The Open University of Israel", he: "האוניברסיטה הפתוחה"}
+    status: in-progress
+    expected: 2027-06
+    notes: {en: "", he: ""}
+  - id: edu-sql
+    degree: {en: "SQL for Data Analysis course (40 hours)", he: "קורס SQL לניתוח נתונים בהיקף 40 שעות"}
+    institution: {en: "Example Data Academy", he: "Example Data Academy"}
+    status: completed
+    end: 2024-05
+
+skills:
+  - {id: skill-excel, name: "Excel", level: advanced, status: verified, explainable: true, context: "Daily at Northwind: Power Query, pivot tables, XLOOKUP"}
+  - {id: skill-powerquery, name: "Power Query", level: working, status: verified, explainable: true, context: "The weekly delivery report"}
+  - {id: skill-sql, name: "SQL", level: working, status: verified, explainable: true, context: "Course + ad-hoc queries at Northwind"}
+  - {id: skill-zendesk, name: "Zendesk", level: advanced, status: verified, explainable: true, context: "Admin-level work at Contoso"}
+  - {id: skill-crm, name: "CRM", level: working, status: verified, explainable: true, context: "Daily use and training at Contoso"}
+  - {id: skill-tableau, name: "Tableau", level: basic, status: self-reported, explainable: false, context: "Half of an online course, never used at work"}
+  - {id: skill-python, name: "Python", level: basic, status: do-not-use, explainable: false, context: "Watched tutorials only"}
+
+projects:
+  - id: proj-churn
+    name: {en: "Customer churn analysis (course project)", he: "ניתוח נטישת לקוחות (פרויקט בקורס)"}
+    status: verified
+    explainable: true
+    bullets:
+      - id: proj-churn-1
+        text:
+          en: "Analyzed a public telecom dataset in Excel and presented the three strongest churn drivers"
+          he: "ניתחתי מאגר נתונים ציבורי של חברת תקשורת באקסל והצגתי את שלושת הגורמים החזקים לנטישה"
+        status: verified
+        explainable: true
+  - id: proj-forecast
+    name: {en: "Inventory forecasting web app", he: "אפליקציית חיזוי מלאי"}
+    status: self-reported        # an AI assistant wrote the code; she can't explain the model
+    explainable: false
+    bullets:
+      - id: proj-forecast-1
+        text:
+          en: "Built a web app that forecasts weekly inventory needs"
+          he: "בניתי אפליקציית ווב שחוזה צורכי מלאי שבועיים"
+        status: self-reported
+        explainable: false
+
+languages:
+  - {id: lang-he, name: {en: "Hebrew", he: "עברית"}, level: {en: "Native", he: "שפת אם"}}
+  - {id: lang-en, name: {en: "English", he: "אנגלית"}, level: {en: "Fluent", he: "רמה גבוהה"}}
+
+summaries:
+  - track: "Operations Analyst"
+    text:
+      en: "Operations analyst who turns manual reporting into automated Excel and SQL workflows, with a customer-service leadership background."
+      he: "אנליסטית תפעול שהופכת דיווח ידני לתהליכי עבודה אוטומטיים באקסל וב-SQL, עם רקע בהובלת צוות שירות לקוחות."
+    sources: [northwind-1, northwind-3, contoso-1]
+
+rules:
+  - "Never describe the degree as completed before it is."
+  - "Don't present the forecasting app as my own engineering work."

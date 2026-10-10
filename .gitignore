@@ -1,0 +1,15 @@
+# Private working notes (contain the author's personal paths and details)
+HANDOFF.md
+PLAN.md
+
+# A user's own job-search data, in case someone runs the plugin from inside this repo
+/profile.yaml
+/cv-tailor.config.json
+/jobs/
+/tracker/
+
+# Office / Python leftovers
+~$*
+*.bak
+__pycache__/
+*.pyc
