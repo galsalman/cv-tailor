@@ -88,17 +88,6 @@ Make an empty folder for your job search, open Claude Code in it, and run:
 | `/cv-tailor:cv-setup [your-cv.docx]` | Builds your `profile.yaml` (from an existing CV or by interview), reviews every claim with you, creates your tracker |
 | `/cv-tailor:tailor-cv <posting URL, file or text>` | The full pipeline above, for one posting |
 | `/cv-tailor:track [what happened]` | "submitted to Acme", "Acme interview on 2026-11-03", or no argument to see what's in flight |
-| `/cv-tailor:scan-setup` | Windows: sets up the automatic job scan and its schedule (`stop` removes it) |
-| `/cv-tailor:scan` | Runs one job scan now |
-
-On a Windows computer that stays on, `/cv-tailor:scan-setup` also schedules an **automatic
-job scan**. It runs twice a day by default and searches Drushim, AllJobs and JobMaster with
-terms built from your profile. It judges each new posting the way the fit-verdict agent does,
-and adds the best few to your tracker as "scan suggestions". You mark each one "Track" or "Not
-relevant", and a dismissed posting is never offered again. LinkedIn is off by default because
-its terms forbid automated collection. `/cv-tailor:scan` runs a scan once by hand. In the
-scheduled runs, Claude Code runs headless from the Windows Task Scheduler, with a 25-minute cap
-and a dry-run switch.
 
 Two more agents are there when you ask for them: **reconnect-advisor** (should I follow up with
 a company that went quiet, and what do I write) and **personal-branding-expert** (is a LinkedIn
@@ -145,11 +134,10 @@ about them and the builder rewords them.
 
 ```
 agents/          six agents: verdict, plan, builder, ATS, follow-up, personal branding
-commands/        /cv-setup, /tailor-cv, /track, /scan, /scan-setup
+commands/        /cv-setup, /tailor-cv, /track
 skills/
   cv-render/     fact check, DOCX builder, PDF render, ATS extraction
   hebrew-docx/   Hebrew/English bidi rules and helpers for Word
-scanner/         job-site collector and the Windows scheduled-task scripts
 dashboard/       tracker page (claude.ai or local) and the local tracker script
 templates/       blank profile
 examples/        fictional profile used for testing

@@ -1,6 +1,6 @@
 {
   "name": "cv-tailor",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "description": "Honest, one-page, ATS-safe CV tailoring for Hebrew and English job postings: fit verdict first, then a CV built only from claims you can explain, then an ATS check, a PDF and a private application tracker.",
   "author": {
     "name": "Gal Salman",

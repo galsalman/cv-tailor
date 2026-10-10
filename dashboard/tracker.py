@@ -11,10 +11,9 @@ Usage (run from the job-search folder):
   python tracker.py get --id <slug>
   python tracker.py list                                  # one line per row
   python tracker.py export-csv [--out tracker/applications.csv]
-  python tracker.py log-run --data-file run.json            # record one scan run (keeps the last 30)
 
 Row fields (all optional except id): company, role, location, link, dateFound, submissionStatus
-(suggested | not_submitted | cv_ready | submitted | skipped), source (scan | manual), responseStatus (waiting | positive | negative),
+(not_submitted | cv_ready | submitted | skipped), responseStatus (waiting | positive | negative),
 interviewStage (none | phone | video | interview | offer), stageDate, stageDone, stageDoneDate,
 dateSubmitted, skillsMatchPercent, cvMatchPercent, verdict, plan, cvFile, jobFolder, notes.
 """
@@ -30,9 +29,9 @@ TEMPLATE = os.path.join(HERE, 'dashboard.html')
 FIELDS = ['id', 'company', 'role', 'location', 'link', 'dateFound', 'submissionStatus',
           'responseStatus', 'interviewStage', 'stageDate', 'stageDone', 'stageDoneDate',
           'dateSubmitted', 'skillsMatchPercent', 'cvMatchPercent', 'verdict', 'plan', 'cvFile',
-          'jobFolder', 'notes', 'source']
+          'jobFolder', 'notes']
 ENUMS = {
-    'submissionStatus': {'suggested', 'not_submitted', 'cv_ready', 'submitted', 'skipped'},
+    'submissionStatus': {'not_submitted', 'cv_ready', 'submitted', 'skipped'},
     'responseStatus': {'waiting', 'positive', 'negative'},
     'interviewStage': {'none', 'phone', 'video', 'interview', 'offer'},
 }
@@ -55,14 +54,6 @@ def language(root):
         return 'he'
 
 
-def load_runs(root):
-    runs = os.path.join(paths(root)[0], 'scan_runs.json')
-    if not os.path.exists(runs):
-        return []
-    with open(runs, encoding='utf-8') as f:
-        return json.load(f)
-
-
 def load(root):
     _, data = paths(root)
     if not os.path.exists(data):
@@ -78,8 +69,7 @@ def save(root, rows):
     with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(rows, f, ensure_ascii=False, indent=2)
     os.replace(tmp, data)
-    payload = json.dumps({'language': language(root), 'rows': rows, 'scanRuns': load_runs(root)},
-                         ensure_ascii=False)
+    payload = json.dumps({'language': language(root), 'rows': rows}, ensure_ascii=False)
     with open(os.path.join(tdir, 'applications.js'), 'w', encoding='utf-8') as f:
         f.write('window.CV_TAILOR_DATA = ' + payload.replace('</', '<\\/') + ';\n')
     with open(TEMPLATE, encoding='utf-8') as f:
@@ -131,8 +121,6 @@ def main():
     g = sub.add_parser('get')
     g.add_argument('--id', required=True)
     sub.add_parser('list')
-    lr = sub.add_parser('log-run')
-    lr.add_argument('--data-file', required=True)
     ex = sub.add_parser('export-csv')
     ex.add_argument('--out')
     args = ap.parse_args()
@@ -150,16 +138,6 @@ def main():
         for r in sorted(load(root), key=lambda r: r.get('dateFound', ''), reverse=True):
             print(f"{r.get('id')} | {r.get('company', '')} | {r.get('role', '')} | "
                   f"{r.get('submissionStatus', '')}/{r.get('responseStatus', '')} | {r.get('dateFound', '')}")
-    elif args.cmd == 'log-run':
-        with open(args.data_file, encoding='utf-8') as f:
-            run = json.load(f)
-        runs = [r for r in load_runs(root) if r.get('id') != run.get('id')] + [run]
-        runs = sorted(runs, key=lambda r: r.get('startedAt', ''))[-30:]
-        os.makedirs(paths(root)[0], exist_ok=True)
-        with open(os.path.join(paths(root)[0], 'scan_runs.json'), 'w', encoding='utf-8') as f:
-            json.dump(runs, f, ensure_ascii=False, indent=2)
-        save(root, load(root))
-        print('run logged: ' + str(run.get('id')))
     elif args.cmd == 'export-csv':
         out = args.out or os.path.join(paths(root)[0], 'applications.csv')
         with open(out, 'w', encoding='utf-8-sig', newline='') as f:

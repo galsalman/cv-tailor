@@ -111,12 +111,6 @@ span.pill{cursor:default; display:inline-block;}
 .pill[data-v="not_submitted"]{background:var(--surface-2); color:var(--ink-2); border-color:var(--line);}
 .pill[data-v="cv_ready"]{background:var(--warn-soft); color:var(--warn);}
 .pill[data-v="submitted"]{background:var(--accent-soft); color:var(--accent);}
-.pill[data-v="suggested"]{background:var(--info-soft); color:var(--info);}
-.sugg{display:flex; flex-wrap:wrap; gap:6px;}
-.sugg button{border:1px solid var(--line); background:var(--surface); border-radius:8px; padding:4px 10px; font-size:12.5px; font-weight:700; cursor:pointer; color:var(--ink);}
-.sugg button.keep{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
-.chip.scan-ok .dot{background:var(--good);}
-.chip.scan-err .dot{background:var(--bad);}
 .pill[data-v="skipped"]{background:var(--surface-2); color:var(--ink-3); border-color:var(--line);}
 .pill[data-v="waiting"]{background:var(--surface-2); color:var(--ink-2); border-color:var(--line);}
 .pill[data-v="positive"]{background:var(--good-soft); color:var(--good);}
@@ -191,7 +185,6 @@ footer ul{list-style:none; padding:0; margin:8px auto 0; display:grid; gap:4px; 
       <p id="t-sub"></p>
     </div>
     <div class="head-tools">
-      <span class="chip" id="scan-chip" hidden><span class="dot"></span><span id="scan-text"></span></span>
       <span class="chip" id="mode-chip"><span class="dot"></span><span id="mode-text">…</span></span>
       <button type="button" class="lang-btn" id="lang-btn">עברית</button>
     </div>
@@ -242,7 +235,7 @@ footer ul{list-style:none; padding:0; margin:8px auto 0; display:grid; gap:4px; 
 (function () {
   'use strict';
   var STALE_DAYS = 10;
-  var SUBMISSION = ['suggested', 'not_submitted', 'cv_ready', 'submitted', 'skipped'];
+  var SUBMISSION = ['not_submitted', 'cv_ready', 'submitted', 'skipped'];
   var RESPONSE = ['waiting', 'positive', 'negative'];
   var STAGES = ['none', 'phone', 'video', 'interview', 'offer'];
 
@@ -256,14 +249,11 @@ footer ul{list-style:none; padding:0; margin:8px auto 0; display:grid; gap:4px; 
       cancel: 'Cancel', save: 'Save', saving: 'Saving…', required: 'Company and role are required.',
       saveFailed: 'Could not save. Check your connection and try again.',
       head: ['', 'Company / role', 'Location', 'Status', 'Fit', 'ATS', 'Found', ''],
-      sub_not_submitted: 'Not submitted', sub_cv_ready: 'CV ready', sub_submitted: 'Submitted', sub_skipped: 'Skipped', sub_suggested: 'Scan suggestion',
-      keep: 'Track', dismiss: 'Not relevant',
-      lastScan: function (when, n, k) { return 'Last scan ' + when + ' · ' + n + ' checked · ' + k + ' suggested'; },
-      scanError: function (when) { return 'Scan failed ' + when; },
+      sub_not_submitted: 'Not submitted', sub_cv_ready: 'CV ready', sub_submitted: 'Submitted', sub_skipped: 'Skipped',
       res_waiting: 'Waiting for reply', res_positive: 'Positive reply', res_negative: 'Rejected',
       st_none: 'No stage yet', st_phone: 'Phone call', st_video: 'Recorded video', st_interview: 'Interview', st_offer: 'Offer',
       f_all: 'All', f_notsub: 'Not submitted', f_cvready: 'CV ready', f_waiting: 'Waiting', f_positive: 'In process',
-      f_negative: 'Rejected', f_stale: 'No reply (10+ days)', f_skipped: 'Skipped', f_suggested: 'Scan suggestions',
+      f_negative: 'Rejected', f_stale: 'No reply (10+ days)', f_skipped: 'Skipped',
       notRated: 'not rated', waitedDays: function (d) { return 'Waiting ' + d + ' days'; },
       staleNote: function (d) { return 'No reply for ' + d + ' days'; },
       soonStale: function (left) { return left + ' days until it counts as no reply'; },
@@ -277,8 +267,7 @@ footer ul{list-style:none; padding:0; margin:8px auto 0; display:grid; gap:4px; 
       emptyFilter: 'Nothing matches this filter.',
       localBanner: 'This is a local copy. Change statuses with `/track` in Claude Code; the file updates itself.',
       rulesTitle: 'How rows move',
-      rules: ['The automatic scan adds "Scan suggestion" rows. "Track" moves one into the list; "Not relevant" hides it and the scan never offers it again.',
-              '`/tailor-cv` adds the row with the fit verdict, and marks it "CV ready" once the CV passes the ATS check.',
+      rules: ['`/tailor-cv` adds the row with the fit verdict, and marks it "CV ready" once the CV passes the ATS check.',
               'A submitted job with no reply after 10 days moves to "No reply". Setting any reply brings it back.',
               'A "not now" verdict is logged as Skipped, so the same posting is not checked twice.']
     },
@@ -291,14 +280,11 @@ footer ul{list-style:none; padding:0; margin:8px auto 0; display:grid; gap:4px; 
       cancel: 'ביטול', save: 'שמירה', saving: 'שומר…', required: 'חובה למלא חברה ותפקיד.',
       saveFailed: 'השמירה נכשלה. בדקו את החיבור ונסו שוב.',
       head: ['', 'חברה / תפקיד', 'מיקום', 'סטטוס', 'התאמה', 'ATS', 'אותרה', ''],
-      sub_not_submitted: 'לא הוגש', sub_cv_ready: 'קו״ח מוכן', sub_submitted: 'הוגש', sub_skipped: 'דולג', sub_suggested: 'הצעת סריקה',
-      keep: 'למעקב', dismiss: 'לא רלוונטי',
-      lastScan: function (when, n, k) { return 'סריקה אחרונה ' + when + ' · ' + n + ' נבדקו · ' + k + ' הוצעו'; },
-      scanError: function (when) { return 'הסריקה נכשלה ' + when; },
+      sub_not_submitted: 'לא הוגש', sub_cv_ready: 'קו״ח מוכן', sub_submitted: 'הוגש', sub_skipped: 'דולג',
       res_waiting: 'ממתין לתשובה', res_positive: 'תשובה חיובית', res_negative: 'נדחה',
       st_none: 'טרם נקבע שלב', st_phone: 'שיחת טלפון', st_video: 'ראיון וידאו מוקלט', st_interview: 'ראיון', st_offer: 'הצעה',
       f_all: 'הכל', f_notsub: 'לא הוגש', f_cvready: 'קו״ח מוכן', f_waiting: 'ממתין', f_positive: 'בתהליך',
-      f_negative: 'נדחה', f_stale: 'ללא מענה (10+ ימים)', f_skipped: 'דולג', f_suggested: 'הצעות סריקה',
+      f_negative: 'נדחה', f_stale: 'ללא מענה (10+ ימים)', f_skipped: 'דולג',
       notRated: 'לא הוערך', waitedDays: function (d) { return 'ממתין ' + d + ' ימים'; },
       staleNote: function (d) { return 'ללא מענה ' + d + ' ימים'; },
       soonStale: function (left) { return 'עוד ' + left + ' ימים ייחשב ללא מענה'; },
@@ -312,14 +298,13 @@ footer ul{list-style:none; padding:0; margin:8px auto 0; display:grid; gap:4px; 
       emptyFilter: 'אין משרות בסינון הזה.',
       localBanner: 'זה עותק מקומי. עדכון סטטוס נעשה עם `/track` ב-Claude Code, והקובץ מתעדכן לבד.',
       rulesTitle: 'איך שורות זזות',
-      rules: ['הסריקה האוטומטית מוסיפה שורות "הצעת סריקה". "למעקב" מכניס משרה לרשימה, ו"לא רלוונטי" מסתיר אותה, והסריקה לא תציע אותה שוב.',
-              '`/tailor-cv` מוסיף שורה עם פסק הדין, ומסמן "קו״ח מוכן" אחרי שהקו״ח עבר את בדיקת ה-ATS.',
+      rules: ['`/tailor-cv` מוסיף שורה עם פסק הדין, ומסמן "קו״ח מוכן" אחרי שהקו״ח עבר את בדיקת ה-ATS.',
               'משרה שהוגשה ולא התקבל עליה מענה תוך 10 ימים עוברת ל"ללא מענה". כל תשובה מחזירה אותה לתהליך.',
               'פסק דין "לא כרגע" נרשם כ"דולג", כדי שאותה מודעה לא תיבדק פעמיים.']
     }
   };
 
-  var FILTERS = ['all', 'suggested', 'notsub', 'cvready', 'waiting', 'positive', 'negative', 'stale', 'skipped'];
+  var FILTERS = ['all', 'notsub', 'cvready', 'waiting', 'positive', 'negative', 'stale', 'skipped'];
   var state = {
     lang: 'he', mode: 'connecting', rows: [], filter: 'all', open: {}, confirmDel: null,
     db: null, settingsLang: null
@@ -351,7 +336,6 @@ footer ul{list-style:none; padding:0; margin:8px auto 0; display:grid; gap:4px; 
   }
   function category(r) {
     var s = sub(r);
-    if (s === 'suggested') return 'suggested';
     if (s === 'not_submitted') return 'notsub';
     if (s === 'cv_ready') return 'cvready';
     if (s === 'skipped') return 'skipped';
@@ -374,11 +358,6 @@ footer ul{list-style:none; padding:0; margin:8px auto 0; display:grid; gap:4px; 
 
   function statusCell(r) {
     var t = L(), s = sub(r), html = '';
-    if (s === 'suggested') {
-      html = '<span class="pill" data-v="suggested">' + esc(t.sub_suggested) + '</span>';
-      if (editable()) html += '<div class="sugg"><button type="button" class="keep" data-act="keep">' + esc(t.keep) + '</button><button type="button" data-act="dismiss">' + esc(t.dismiss) + '</button></div>';
-      return '<div class="stack">' + html + '</div>';
-    }
     html += editable()
       ? '<select class="pill" data-act="sub" data-v="' + s + '" aria-label="' + esc(t.submission) + '">' + options(SUBMISSION, 'sub_', s) + '</select>'
       : '<span class="pill" data-v="' + s + '">' + esc(t['sub_' + s]) + '</span>';
@@ -429,13 +408,6 @@ footer ul{list-style:none; padding:0; margin:8px auto 0; display:grid; gap:4px; 
     $('lang-btn').textContent = t.other;
     var chip = $('mode-chip');
     chip.className = 'chip ' + (state.mode === 'live' ? 'live' : (state.mode === 'local' ? 'local' : ''));
-    var run = state.lastRun, chipEl = $('scan-chip');
-    chipEl.hidden = !run;
-    if (run) {
-      var when = run.startedAt ? new Date(run.startedAt).toLocaleString(state.lang === 'he' ? 'he-IL' : 'en-GB', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-      chipEl.className = 'chip ' + (run.status === 'error' ? 'scan-err' : 'scan-ok');
-      $('scan-text').textContent = run.status === 'error' ? t.scanError(when) : t.lastScan(when, run.collected || 0, run.reported || 0);
-    }
     $('mode-text').textContent = state.mode === 'live' ? t.live : state.mode === 'local' ? t.local : state.mode === 'offline' ? t.offline : t.connecting;
     $('add-toggle').hidden = !editable();
     $('add-toggle').textContent = t.add;
@@ -524,13 +496,6 @@ footer ul{list-style:none; padding:0; margin:8px auto 0; display:grid; gap:4px; 
     var id = tr.getAttribute('data-id'), act = e.target.getAttribute('data-act');
     if (act === 'del') { state.confirmDel = id; render(); return; }
     if (act === 'delNo') { state.confirmDel = null; render(); return; }
-    if (act === 'keep') { write(id, { submissionStatus: 'not_submitted' }); return; }
-    if (act === 'dismiss') {
-      var prev = (rowById(id) || {}).notes;
-      var line = todayISO() + ': not relevant (scan)';
-      write(id, { submissionStatus: 'skipped', notes: prev ? prev + ' | ' + line : line });
-      return;
-    }
     if (act === 'delYes') {
       state.confirmDel = null;
       state.db.collection('applications').doc(id).delete().catch(function (err) { console.error('delete failed', err); });
@@ -578,7 +543,6 @@ footer ul{list-style:none; padding:0; margin:8px auto 0; display:grid; gap:4px; 
   if (local && Array.isArray(local.rows)) {
     state.mode = 'local';
     pickLang(local.language);
-    state.lastRun = (local.scanRuns || []).slice(-1)[0] || null;
     state.rows = local.rows.map(function (r, i) { var c = Object.assign({}, r); c.id = c.id || 'row-' + i; return c; });
     render();
     return;
@@ -595,9 +559,6 @@ footer ul{list-style:none; padding:0; margin:8px auto 0; display:grid; gap:4px; 
       var d = snap.exists ? snap.data() : null;
       if (d && !langOverride) { pickLang(d.language); render(); }
     }, function (err) { console.error('settings subscribe error', err); });
-    db.collection('scan_runs').orderBy('startedAt', 'desc').limit(1).onSnapshot(function (qs) {
-      state.lastRun = qs.docs.length ? qs.docs[0].data() : null; render();
-    }, function (err) { console.error('scan_runs subscribe error', err); });
     db.collection('applications').onSnapshot(function (qs) {
       state.rows = qs.docs.map(function (s) { var c = Object.assign({}, s.data() || {}); c.id = s.id; return c; });
       render();
