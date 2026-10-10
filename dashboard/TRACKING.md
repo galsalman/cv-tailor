@@ -11,7 +11,8 @@ letters/digits/dashes, the same name as its `jobs/` folder). Fields, all optiona
 |---|---|
 | `company`, `role`, `location`, `link` | text, as written in the posting |
 | `dateFound` | `YYYY-MM-DD` |
-| `submissionStatus` | `not_submitted`, `cv_ready`, `submitted`, `skipped` |
+| `submissionStatus` | `suggested` (found by the scan, not yet reviewed), `not_submitted`, `cv_ready`, `submitted`, `skipped` |
+| `source` | `scan` for rows the automatic scan added, otherwise omit |
 | `responseStatus` | `waiting`, `positive`, `negative` |
 | `interviewStage` | `none`, `phone`, `video`, `interview`, `offer` |
 | `stageDate`, `dateSubmitted`, `stageDoneDate` | `YYYY-MM-DD` |
@@ -47,6 +48,15 @@ Use the `ArtifactData` tool (load it with ToolSearch if it is deferred):
 
 If the artifact can't be reached (deleted, tools unavailable), say so, fall back to local mode
 for this write, and tell the user to rerun `/cv-tailor:cv-setup` to reconnect a dashboard.
+
+## Scan runs
+
+Each automatic scan also records one run: `{id, startedAt, status, collected, evaluated, reported,
+addedList, summary}` (`id` = the run stamp `YYYY-MM-DD_HHMM`, `startedAt` ISO with offset,
+`status` `ok` or `error`). Local: write it to `scan/results/<id>_run.json` and run
+`python "${CLAUDE_PLUGIN_ROOT}/dashboard/tracker.py" log-run --data-file <that file>`.
+Artifact: `set` it in collection `scan_runs` with doc id `<id>`. The dashboard shows the latest
+run in its header.
 
 ## Finding a row from what the user says
 
